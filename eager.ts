@@ -1,5 +1,5 @@
 export class Backtrack<A> {
-  constructor(public readonly run: <R>(cons: (a: A, r: R) => R, nil: R) => R) {}
+  constructor(readonly run: <R>(cons: (a: A, r: R) => R, nil: R) => R) {}
 
   static of<A>(a: A): Backtrack<A> {
     return new Backtrack((cons, nil) => cons(a, nil));
@@ -10,13 +10,7 @@ export class Backtrack<A> {
   }
 
   static fromArray<A>(xs: readonly A[]): Backtrack<A> {
-    return new Backtrack((cons, nil) => {
-      let acc = nil;
-      for (let i = xs.length - 1; i >= 0; i--) {
-        acc = cons(xs[i]!, acc);
-      }
-      return acc;
-    });
+    return new Backtrack((cons, nil) => xs.reduceRight((acc, x) => cons(x, acc), nil));
   }
 
   static guard(condition: boolean): Backtrack<void> {
@@ -36,14 +30,13 @@ export class Backtrack<A> {
   }
 
   *iterate(): Generator<A> {
-    const step = this.run<() => Generator<A>>(
+    yield* this.run<() => Generator<A>>(
       (a, next) => function* () {
         yield a;
         yield* next();
       },
       function* () {},
-    );
-    yield* step();
+    )();
   }
 
   toArray(): A[] {
@@ -55,8 +48,8 @@ export class Backtrack<A> {
       new Backtrack((cons, nil) => {
         const it = body();
         let state = it.next();
-        for (const pastValue of history) {
-          state = it.next(pastValue);
+        for (const value of history) {
+          state = it.next(value);
         }
         if (state.done) {
           return cons(state.value, nil);

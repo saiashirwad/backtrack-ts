@@ -1,17 +1,17 @@
 import { Backtrack } from "./lazy";
+import type { Logic } from "./search";
 
 const parents = [
   ["Sarah", "John"],
   ["Arnold", "John"],
   ["John", "Anne"],
-];
+] as const;
 
-export const grandparent = (grandchild: string) =>
-  Backtrack.gen(function* () {
-    const [p, c] = yield* Backtrack.fromArray(parents);
-    const [c_, g] = yield* Backtrack.fromArray(parents);
-    yield* Backtrack.guard(c === c_);
-    yield* Backtrack.guard(g === grandchild);
+export const grandparent = (grandchild: string, logic: Logic = Backtrack) =>
+  logic.gen(function* () {
+    const [p, c] = yield* logic.fromArray(parents);
+    const [c_, g] = yield* logic.fromArray(parents);
+    yield* logic.guard(c === c_);
+    yield* logic.guard(g === grandchild);
     return p;
   });
-

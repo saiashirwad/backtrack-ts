@@ -1,5 +1,5 @@
 export class Backtrack<A> {
-  constructor(private readonly search: () => Generator<A>) {}
+  constructor(readonly iterate: () => Generator<A>) {}
 
   static of<A>(a: A): Backtrack<A> {
     return new Backtrack(function* () {
@@ -38,10 +38,6 @@ export class Backtrack<A> {
     return yield this;
   }
 
-  iterate(): Generator<A> {
-    return this.search();
-  }
-
   toArray(): A[] {
     return Array.from(this.iterate());
   }
@@ -52,16 +48,13 @@ export class Backtrack<A> {
         const it = body();
         try {
           let state = it.next();
-
-          for (const pastValue of history) {
-            state = it.next(pastValue);
+          for (const value of history) {
+            state = it.next(value);
           }
-
           if (state.done) {
             yield state.value;
             return;
           }
-
           for (const value of state.value.iterate()) {
             yield* step([...history, value]).iterate();
           }
@@ -69,7 +62,6 @@ export class Backtrack<A> {
           it.return(undefined as A);
         }
       });
-
     return step([]);
   }
 }
