@@ -35,7 +35,7 @@ export class Backtrack<A> {
     return yield this;
   }
 
-  *toGenerator(): Generator<A> {
+  *iterate(): Generator<A> {
     const step = this.run<() => Generator<A>>(
       (a, next) =>
         function* () {
@@ -45,6 +45,10 @@ export class Backtrack<A> {
       function* () {},
     );
     yield* step();
+  }
+
+  toArray(): A[] {
+    return Array.from(this.iterate());
   }
 
   static gen<A>(body: () => Generator<Backtrack<any>, A, any>): Backtrack<A> {
@@ -68,29 +72,19 @@ export class Backtrack<A> {
   }
 }
 
-type Board = readonly number[];
+const parents = [
+  ["Sarah", "John"],
+  ["Arnold", "John"],
+  ["John", "Anne"],
+];
 
-const isSafe = (col: number, placed: Board): boolean =>
-  placed.every((prevCol, idx) => col !== prevCol && Math.abs(col - prevCol) !== idx + 1);
+const grandparent = (grandchild: string) =>
+  Backtrack.gen(function* () {
+    const [p, c] = yield* Backtrack.fromArray(parents);
+    const [c_, g] = yield* Backtrack.fromArray(parents);
+    yield* Backtrack.guard(c === c_);
+    yield* Backtrack.guard(g === grandchild);
+    return p;
+  });
 
-const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i + 1);
-
-function queens(n: number) {
-  const cols = range(n);
-
-  const placeRows = (row: number, placed: Board): Backtrack<Board> => {
-    if (row > n) return Backtrack.of(placed);
-
-    return Backtrack.gen(function* () {
-      const col = yield* Backtrack.fromArray(cols);
-      yield* Backtrack.guard(isSafe(col, placed));
-      return yield* placeRows(row + 1, [col, ...placed]);
-    });
-  };
-
-  return placeRows(1, []);
-}
-
-const firstSolution = queens(8).toGenerator().next().value;
-console.log(firstSolution);
-
+console.log(grandparent("Anne").toArray());
