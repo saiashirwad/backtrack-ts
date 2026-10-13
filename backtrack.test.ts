@@ -2,10 +2,49 @@ import { expect, test } from "bun:test";
 import fc from "fast-check";
 import { Backtrack as Lazy } from "./lazy";
 import { Backtrack as Eager } from "./eager";
+import { grandparent } from "./grandparent";
+import { queens } from "./nqueens";
 
 const integer = fc.integer({ min: -100, max: 100 });
 const values = fc.array(integer, { maxLength: 8 });
-const options = { numRuns: 300 };
+const options = {
+  numRuns: 300,
+  seed: process.env.FC_SEED ? Number(process.env.FC_SEED) : undefined,
+};
+
+test("examples return the expected relatives and complete valid queens solutions", () => {
+  const counts = [1, 1, 0, 0, 2, 10, 4, 40, 92];
+  fc.assert(fc.property(
+    fc.oneof(fc.constantFrom("Anne", "John", "Sarah", "Arnold"), fc.string()),
+    fc.integer({ min: 0, max: 8 }),
+    (name, n) => {
+      expect(grandparent(name).toArray()).toEqual(name === "Anne" ? ["Sarah", "Arnold"] : []);
+      const solutions = queens(n).toArray();
+      expect(solutions.length).toBe(counts[n]!);
+      expect(new Set(solutions.map((board) => JSON.stringify(board))).size).toBe(solutions.length);
+      for (const board of solutions) {
+        expect(board.length).toBe(n);
+        expect(board.every((col) => col >= 1 && col <= n)).toBe(true);
+        expect(board.every((col, row) => board.every((other, otherRow) =>
+          row === otherRow || (col !== other && Math.abs(col - other) !== Math.abs(row - otherRow)),
+        ))).toBe(true);
+      }
+    },
+  ), { ...options, numRuns: 100 });
+});
+
+test("both implementations compose flatMap and map like array searches", () => {
+  fc.assert(fc.property(
+    values, fc.func(fc.array(integer, { maxLength: 3 })), fc.func(integer),
+    (xs, branch, transform) => {
+      const expected = xs.flatMap((x) => branch(x)).map((x) => transform(x));
+      const lazy = Lazy.fromArray(xs).flatMap((x) => Lazy.fromArray(branch(x))).map(transform);
+      const eager = Eager.fromArray(xs).flatMap((x) => Eager.fromArray(branch(x))).map(transform);
+      expect(lazy.toArray()).toEqual(expected);
+      expect(eager.toArray()).toEqual(expected);
+    },
+  ), options);
+});
 
 test("both implementations backtrack through nested choices and guards", () => {
   fc.assert(fc.property(values, values, fc.func(fc.boolean()), (xs, ys, accept) => {

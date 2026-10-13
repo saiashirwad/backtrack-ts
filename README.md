@@ -1,15 +1,47 @@
-# backtrack-ts
+```ts
+import { Backtrack } from "./lazy";
 
-To install dependencies:
+const parents = [
+  ["Sarah", "John"],
+  ["Arnold", "John"],
+  ["John", "Anne"],
+];
 
-```bash
-bun install
+const grandparent = (grandchild: string) =>
+  Backtrack.gen(function* () {
+    const [p, c] = yield* Backtrack.fromArray(parents);
+    const [c_, g] = yield* Backtrack.fromArray(parents);
+    yield* Backtrack.guard(c === c_);
+    yield* Backtrack.guard(g === grandchild);
+    return p;
+  });
+
+console.log(grandparent("Anne").toArray()); // ["Sarah", "Arnold"]
 ```
 
-To run:
+```ts
+import { Backtrack } from "./lazy";
 
-```bash
-bun run index.ts
+const queens = (n: number) => {
+  const cols = Array.from({ length: n }, (_, i) => i + 1);
+
+  const place = (placed: readonly number[]): Backtrack<readonly number[]> =>
+    Backtrack.gen(function* () {
+      if (placed.length === n) return placed;
+
+      const col = yield* Backtrack.fromArray(cols);
+      yield* Backtrack.guard(
+        placed.every((prev, i) => col !== prev && Math.abs(col - prev) !== i + 1),
+      );
+      return yield* place([col, ...placed]);
+    });
+
+  return place([]);
+};
+
+const solutions = queens(8);
+const results = solutions.iterate();
+console.log(results.next().value); // First solution
+results.return(undefined);
+console.log(solutions.toArray().length); // 92
 ```
-
-This project was created using `bun init` in bun v1.4.0. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.

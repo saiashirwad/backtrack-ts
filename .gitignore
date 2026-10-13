@@ -9,6 +9,8 @@ dist
 # code coverage
 coverage
 *.lcov
+.stryker-tmp
+reports/mutation
 
 # logs
 logs
