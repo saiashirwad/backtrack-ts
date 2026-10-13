@@ -3,8 +3,13 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "bench": "bun run bench.ts"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "fast-check": "^4.10.2",
+    "mitata": "^1.0.34"
   },
   "peerDependencies": {
     "typescript": "^7"
