@@ -45,3 +45,38 @@ console.log(results.next().value); // First solution
 results.return(undefined);
 console.log(solutions.toArray().length); // 92
 ```
+
+```ts
+import { Goal, facts, fresh, oneOf, query, table, type Term } from "./unify";
+
+const parent = facts([
+  ["Sarah", "John"],
+  ["Arnold", "John"],
+  ["John", "Anne"],
+]);
+
+const grandparent = (g: Term, x: Term) =>
+  Goal.gen(function* () {
+    const p = yield* fresh();
+    yield* parent(g, p);
+    yield* parent(p, x);
+  });
+
+console.log(query((q) => grandparent(q, "Anne")).toArray()); // ["Sarah", "Arnold"]
+console.log(query((q) => grandparent("Sarah", q)).toArray()); // ["Anne"]
+
+// Tabling lets left recursion over a cyclic graph terminate.
+const edge = facts([["a", "b"], ["b", "a"], ["b", "c"]]);
+const path: (x: Term, z: Term) => Goal<void> = table((x, z) =>
+  oneOf(
+    Goal.gen(function* () {
+      const y = yield* fresh();
+      yield* path(x, y);
+      yield* edge(y, z);
+    }),
+    edge(x, z),
+  ),
+);
+
+console.log(query((z) => path("a", z)).toArray()); // ["b", "a", "c"]
+```
