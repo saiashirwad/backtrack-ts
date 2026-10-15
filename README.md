@@ -2,8 +2,8 @@
 
 An implementation of Prolog in TypeScript. You write facts and rules as TypeScript functions, then query them with any mix of known and unknown arguments.
 
-- **Implemented:** unification (with the occurs check), facts, rules, conjunction and disjunction, lists, arithmetic on bound values (like `is`), and tabling (`:- table`).
-- **Not implemented:** Prolog source syntax, cut, negation, `assert`/`retract`, and constraints such as `dif`. Answers may come back in a different order than in standard Prolog.
+- **Implemented:** unification (with the occurs check), facts, rules, conjunction and disjunction, cut, negation as failure, `once`, if-then-else, lists, arithmetic on bound values (like `is`), and tabling (`:- table`). Answers come back in standard Prolog order.
+- **Not implemented:** Prolog source syntax, `assert`/`retract`, exceptions, and constraints such as `dif`.
 
 ```ts
 import { Goal, eq, facts, fresh, query, value, type Term } from "prolog-ts";

@@ -1,4 +1,4 @@
-import { Cons, Goal, conj, eq, facts, fail, fresh, oneOf, table, value, type Term } from "../src/unify.ts";
+import { Cons, Goal, conj, eq, facts, fail, fresh, oneOf, table, value, type Term } from "../src/index.ts";
 
 export const parent = facts([
   ["Sarah", "John"],
@@ -53,15 +53,11 @@ export const length = (xs: Term, n: Term): Goal<void> =>
     }),
   );
 
-// nat(s(Y)) :- nat(Y).  nat(0).  Left-recursive, with infinitely many answers.
+// nat(0).  nat(s(X)) :- nat(X).  Infinitely many answers, produced in order.
 export const nat = (x: Term): Goal<void> =>
   oneOf(
-    Goal.gen(function* () {
-      const y = yield* fresh();
-      yield* nat(y);
-      yield* eq(x, ["s", y]);
-    }),
     eq(x, 0),
+    fresh((y) => conj(eq(x, ["s", y]), nat(y))),
   );
 
 export const edge = facts([
