@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import fc from "fast-check";
-import { Goal, eq, fresh, list, oneOf, query } from "./unify";
-import { append, grandparent, nat, path } from "./relations";
+import { Goal, Var, conj, eq, fresh, list, oneOf, query, value } from "./unify";
+import { append, appendWithoutGen, grandparent, length, nat, path } from "./relations";
 
 const options = {
   numRuns: 200,
@@ -106,4 +106,46 @@ test("deep recursion and long bodies run on a flat stack", () => {
   let [term, depth] = [query(chain).toArray()[0], 0];
   for (; Array.isArray(term); depth++) term = term[1];
   expect([term, depth]).toEqual([0, n]);
+});
+
+test("gen bodies use earlier results to build later terms and return values", () => {
+  const vars = (n: number): Goal<Var[]> =>
+    Goal.gen(function* () {
+      const out: Var[] = [];
+      for (let i = 0; i < n; i++) out.push(yield* fresh());
+      return out;
+    });
+  const answers = query((q) =>
+    Goal.gen(function* () {
+      const [a, b, c] = yield* vars(3);
+      yield* eq(q, [a!, b!, c!]);
+      yield* eq(a!, 1);
+      const x = (yield* value(a!)) as number;
+      yield* eq(b!, [x, x]);
+    }),
+  ).toArray();
+  expect(answers).toEqual([[1, [1, 1], "_3"]]);
+});
+
+test("value reads bindings into JavaScript, so length can compute with them", () => {
+  fc.assert(fc.property(fc.array(fc.integer(), { maxLength: 8 }), (xs) => {
+    expect(query((n) => length(list(...xs), n)).toArray()).toEqual([xs.length]);
+  }), options);
+  // Generate mode: lists of length 2 are found (the search for more never ends).
+  const [generated] = take(query((xs) => length(xs, 2)), 1);
+  expect(generated).toHaveLength(2);
+  expect(query((t) => value(["f", t])).toArray()).toEqual(["_0"]);
+});
+
+test("conj and fresh's callback form match the generator version", () => {
+  fc.assert(fc.property(fc.array(fc.integer(), { maxLength: 6 }), (xs) => {
+    const viaGen = query((a, b) => append(a, b, list(...xs))).toArray();
+    const viaConj = query((a, b) => appendWithoutGen(a, b, list(...xs))).toArray();
+    expect(sorted(viaConj)).toEqual(sorted(viaGen));
+  }), options);
+  const forever = (q: unknown): Goal<void> => fresh(() => forever(q));
+  expect(take(query((q) => oneOf(forever(q), eq(q, "found"))), 1)).toEqual(["found"]);
+  expect(query((q) => conj(eq(q, 1), eq(q, 2))).toArray()).toEqual([]);
+  const xs = Array.from({ length: 50_000 }, (_, i) => i);
+  expect(query((q) => appendWithoutGen(list(...xs), list("end"), q)).toArray()[0]).toHaveLength(50_001);
 });

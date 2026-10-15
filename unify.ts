@@ -257,8 +257,23 @@ const unify = (a: Term, b: Term, subst: Subst): Subst | null => {
 
 const rebuild = (t: Term, kids: Term[]): Term => (t instanceof Cons ? new Cons(kids[0]!, kids[1]!) : kids);
 
-/** A new unbound logic variable. */
-export const fresh = (): Goal<Var> => new Goal((s, k) => k(new Var(s.next), { ...s, next: s.next + 1 }), true);
+/**
+ * `fresh()` yields a new unbound variable inside `Goal.gen`.
+ * `fresh((x, y) => goal)` introduces one variable per parameter without a generator,
+ * miniKanren style. The callback runs only when the goal does, so recursive relations
+ * written this way don't recurse while being constructed.
+ */
+export function fresh(): Goal<Var>;
+export function fresh<A>(f: (...vars: Var[]) => Goal<A>): Goal<A>;
+export function fresh<A>(f?: (...vars: Var[]) => Goal<A>): Goal<Var> | Goal<A> {
+  if (!f) return new Goal<Var>((s, k) => k(new Var(s.next), { ...s, next: s.next + 1 }), true);
+  return new Goal<A>((s, k, sched) =>
+    sched.push(() => {
+      const vars = Array.from({ length: f.length }, (_, i) => new Var(s.next + i));
+      f(...vars).run({ ...s, next: s.next + vars.length }, k, sched);
+    }),
+  );
+}
 
 /** Succeeds once if `a` and `b` unify, extending the bindings; fails otherwise. */
 export const eq = (a: Term, b: Term): Goal<void> =>
@@ -266,6 +281,35 @@ export const eq = (a: Term, b: Term): Goal<void> =>
     const subst = unify(a, b, s.subst);
     if (subst) k(undefined, { ...s, subst });
   }, true);
+
+/**
+ * Reads `t` under the current bindings into JavaScript, like the right-hand side of
+ * Prolog's `is`. Variables still unbound at this point come back as `Var`s.
+ */
+export const value = (t: Term): Goal<Term> =>
+  new Goal((s, k) => k(fold(t, s.subst, (leaf) => leaf, rebuild), s), true);
+
+/** Run goals in sequence without a generator, so nothing is ever replayed. */
+export const conj = (...goals: Goal<unknown>[]): Goal<void> => {
+  const det = goals.every((g) => g.det);
+  return new Goal((s, k, sched) => {
+    const from = (i: number, s: State): void => {
+      // Deterministic goals run in a loop so long conjunctions don't nest calls.
+      for (; i < goals.length && goals[i]!.det; i++) {
+        let next: State | undefined;
+        goals[i]!.run(s, (_, s2) => (next = s2), sched);
+        if (!next) return;
+        s = next;
+      }
+      if (i < goals.length) goals[i]!.run(s, (_, s2) => from(i + 1, s2), sched);
+      // Like gen, hand the result back through the queue: calling k directly would
+      // unwind every enclosing recursive conj on the JS stack at once.
+      else if (det) k(undefined, s);
+      else sched.push(() => k(undefined, s));
+    };
+    from(0, s);
+  }, det);
+};
 
 /** Try every alternative; their answers are interleaved fairly. */
 export const oneOf = <A>(...goals: Goal<A>[]): Goal<A> =>

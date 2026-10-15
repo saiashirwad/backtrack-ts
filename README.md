@@ -80,3 +80,28 @@ const path: (x: Term, z: Term) => Goal<void> = table((x, z) =>
 
 console.log(query((z) => path("a", z)).toArray()); // ["b", "a", "c"]
 ```
+
+```ts
+import { Cons, Goal, conj, eq, fresh, oneOf, query, value, type Term } from "./unify";
+
+// gen bodies can compute with bindings: `value` plays the role of Prolog's `is`.
+const length = (xs: Term, n: Term): Goal<void> =>
+  oneOf(
+    conj(eq(xs, []), eq(n, 0)),
+    Goal.gen(function* () {
+      const t = yield* fresh();
+      const m = yield* fresh();
+      yield* eq(xs, new Cons(yield* fresh(), t));
+      yield* length(t, m);
+      const count = (yield* value(m)) as number;
+      yield* eq(n, count + 1);
+    }),
+  );
+
+// Pure relations can skip generators (and their replay cost) with conj and fresh's callback form.
+const append = (xs: Term, ys: Term, zs: Term): Goal<void> =>
+  oneOf(
+    conj(eq(xs, []), eq(ys, zs)),
+    fresh((h, t, r) => conj(eq(xs, new Cons(h, t)), eq(zs, new Cons(h, r)), append(t, ys, r))),
+  );
+```
