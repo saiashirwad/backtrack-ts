@@ -1,11 +1,21 @@
-import { Backtrack } from "./lazy";
+import { Backtrack } from "./lazy.ts";
 
 export class Var {
-  constructor(readonly id: number) {}
+  readonly id: number;
+
+  constructor(id: number) {
+    this.id = id;
+  }
 }
 
 export class Cons {
-  constructor(readonly head: Term, readonly tail: Term) {}
+  readonly head: Term;
+  readonly tail: Term;
+
+  constructor(head: Term, tail: Term) {
+    this.head = head;
+    this.tail = tail;
+  }
 }
 
 export type Term = string | number | boolean | null | Var | Cons | readonly Term[];
@@ -74,14 +84,17 @@ class Scheduler {
 }
 
 export class Goal<A> {
+  readonly run: (s: State, k: Cont<A>, sched: Scheduler) => void;
   /**
    * `det` goals call `k` synchronously at most once, so `gen` can run them inline.
    * Every other goal must call `k` from a scheduled task.
    */
-  constructor(
-    readonly run: (s: State, k: Cont<A>, sched: Scheduler) => void,
-    readonly det = false,
-  ) {}
+  readonly det: boolean;
+
+  constructor(run: (s: State, k: Cont<A>, sched: Scheduler) => void, det = false) {
+    this.run = run;
+    this.det = det;
+  }
 
   *[Symbol.iterator](): Generator<Goal<A>, A, A> {
     return yield this;
@@ -429,10 +442,13 @@ export const table = <Args extends readonly Term[]>(relation: (...args: Args) =>
 // A reified list under construction: elements are pushed from the last to the
 // first as fold climbs back up the cons cells.
 class PartialList {
-  constructor(
-    readonly reversed: unknown[],
-    readonly tail: unknown,
-  ) {}
+  readonly reversed: unknown[];
+  readonly tail: unknown;
+
+  constructor(reversed: unknown[], tail: unknown) {
+    this.reversed = reversed;
+    this.tail = tail;
+  }
 }
 
 const finish = (x: unknown): unknown => {

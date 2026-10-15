@@ -1,4 +1,4 @@
-import { Cons, Goal, conj, eq, facts, fail, fresh, oneOf, table, value, type Term } from "../src/unify";
+import { Cons, Goal, conj, eq, facts, fail, fresh, oneOf, table, value, type Term } from "../src/unify.ts";
 
 export const parent = facts([
   ["Sarah", "John"],

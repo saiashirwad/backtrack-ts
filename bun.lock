@@ -9,8 +9,6 @@
         "@types/bun": "latest",
         "fast-check": "^4.10.2",
         "mitata": "^1.0.34",
-      },
-      "peerDependencies": {
         "typescript": "^7",
       },
     },

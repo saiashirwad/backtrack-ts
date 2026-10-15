@@ -5,3 +5,4 @@ reports/mutation
 .env*
 .idea
 .DS_Store
+dist

@@ -1,5 +1,5 @@
-import { Backtrack } from "../src/lazy";
-import type { Logic } from "../src/search";
+import { Backtrack } from "../src/lazy.ts";
+import type { Logic } from "../src/search.ts";
 
 const parents = [
   ["Sarah", "John"],

@@ -1,5 +1,9 @@
 export class Backtrack<A> {
-  constructor(readonly run: <R>(cons: (a: A, r: R) => R, nil: R) => R) {}
+  readonly run: <R>(cons: (a: A, r: R) => R, nil: R) => R;
+
+  constructor(run: <R>(cons: (a: A, r: R) => R, nil: R) => R) {
+    this.run = run;
+  }
 
   static of<A>(a: A): Backtrack<A> {
     return new Backtrack((cons, nil) => cons(a, nil));

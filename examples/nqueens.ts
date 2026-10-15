@@ -1,5 +1,5 @@
-import { Backtrack } from "../src/lazy";
-import type { Logic, Search } from "../src/search";
+import { Backtrack } from "../src/lazy.ts";
+import type { Logic, Search } from "../src/search.ts";
 
 export const queens = (n: number, logic: Logic = Backtrack) => {
   const cols = Array.from({ length: n }, (_, i) => i + 1);

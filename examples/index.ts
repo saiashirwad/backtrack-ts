@@ -1,10 +1,10 @@
-import { grandparent } from "./grandparent";
-import { queens } from "./nqueens";
+import { grandparent } from "./grandparent.ts";
+import { queens } from "./nqueens.ts";
 import {
   ancestor, append, australia, fromPeano, grandparent as grandparentRelation, length, member, path, peano, plus,
   pythagorean,
-} from "./relations";
-import { list, query } from "../src/unify";
+} from "./relations.ts";
+import { list, query } from "../src/unify.ts";
 
 console.log(grandparent("Anne").toArray());
 

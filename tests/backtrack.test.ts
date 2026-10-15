@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
 import fc from "fast-check";
-import { Backtrack as Lazy } from "../src/lazy";
-import { Backtrack as Eager } from "../src/eager";
-import { grandparent } from "../examples/grandparent";
-import { queens } from "../examples/nqueens";
+import { Backtrack as Lazy } from "../src/lazy.ts";
+import { Backtrack as Eager } from "../src/eager.ts";
+import { grandparent } from "../examples/grandparent.ts";
+import { queens } from "../examples/nqueens.ts";
 
 const integer = fc.integer({ min: -100, max: 100 });
 const values = fc.array(integer, { maxLength: 8 });

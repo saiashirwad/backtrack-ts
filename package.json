@@ -1,21 +1,58 @@
 {
   "name": "backtrack-ts",
-  "module": "examples/index.ts",
+  "version": "0.1.0",
+  "description": "Backtracking search with generators, plus a Prolog-style logic layer with unification, fair search, and tabling.",
+  "keywords": [
+    "backtracking",
+    "logic-programming",
+    "prolog",
+    "minikanren",
+    "unification",
+    "generators",
+    "search"
+  ],
+  "author": "Sai Ashirwad",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saiashirwad/backtrack-ts.git"
+  },
+  "homepage": "https://github.com/saiashirwad/backtrack-ts#readme",
+  "bugs": {
+    "url": "https://github.com/saiashirwad/backtrack-ts/issues"
+  },
   "type": "module",
-  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./eager": {
+      "types": "./dist/eager.d.ts",
+      "import": "./dist/eager.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
   "scripts": {
+    "build": "rm -rf dist && bun build src/index.ts src/eager.ts --outdir dist --target node --format esm && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
     "test": "bun test",
     "examples": "bun run examples/index.ts",
     "bench": "bun run bench/index.ts",
-    "mutate": "node node_modules/@stryker-mutator/core/bin/stryker.js run"
+    "mutate": "node node_modules/@stryker-mutator/core/bin/stryker.js run",
+    "prepublishOnly": "bun run typecheck && bun test && bun run build"
   },
   "devDependencies": {
     "@stryker-mutator/core": "^10.0.0",
     "@types/bun": "latest",
     "fast-check": "^4.10.2",
-    "mitata": "^1.0.34"
-  },
-  "peerDependencies": {
+    "mitata": "^1.0.34",
     "typescript": "^7"
   }
 }

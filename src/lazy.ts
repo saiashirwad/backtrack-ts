@@ -1,5 +1,9 @@
 export class Backtrack<A> {
-  constructor(readonly iterate: () => Generator<A>) {}
+  readonly iterate: () => Generator<A>;
+
+  constructor(iterate: () => Generator<A>) {
+    this.iterate = iterate;
+  }
 
   static of<A>(a: A): Backtrack<A> {
     return new Backtrack(function* () {
