@@ -1,5 +1,5 @@
 {
-  "name": "backtrack-ts",
+  "name": "prolog-ts",
   "version": "0.1.0",
   "description": "Backtracking search with generators, plus a Prolog-style logic layer with unification, fair search, and tabling.",
   "keywords": [
@@ -14,11 +14,11 @@
   "author": "Sai Ashirwad",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/saiashirwad/backtrack-ts.git"
+    "url": "git+https://github.com/saiashirwad/prolog-ts.git"
   },
-  "homepage": "https://github.com/saiashirwad/backtrack-ts#readme",
+  "homepage": "https://github.com/saiashirwad/prolog-ts#readme",
   "bugs": {
-    "url": "https://github.com/saiashirwad/backtrack-ts/issues"
+    "url": "https://github.com/saiashirwad/prolog-ts/issues"
   },
   "type": "module",
   "main": "./dist/index.js",

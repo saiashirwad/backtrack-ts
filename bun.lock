@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "backtrack-ts",
+      "name": "prolog-ts",
       "devDependencies": {
         "@stryker-mutator/core": "^10.0.0",
         "@types/bun": "latest",

@@ -1,9 +1,9 @@
-# backtrack-ts
+# prolog-ts
 
 Prolog-style logic programming in TypeScript, written with generators. Relations run in any direction, and each `yield*` hands its result back to JavaScript: `fresh()` gives a variable to reuse in later goals, and `value()` reads a binding so ordinary code can compute with it.
 
 ```ts
-import { Goal, eq, facts, fresh, query, value, type Term } from "backtrack-ts";
+import { Goal, eq, facts, fresh, query, value, type Term } from "prolog-ts";
 
 const parent = facts([
   ["Sarah", "John"],
@@ -47,7 +47,7 @@ query((g) => grandparent(g, "Anne", 52)).toArray();
 Underneath is `Backtrack`, a lazy backtracking search you can use directly:
 
 ```ts
-import { Backtrack } from "backtrack-ts";
+import { Backtrack } from "prolog-ts";
 
 const queens = (n: number, placed: readonly number[] = []): Backtrack<readonly number[]> =>
   Backtrack.gen(function* () {
