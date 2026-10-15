@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
 import fc from "fast-check";
 import {
-  Goal, Var, clauses, conj, cut, eq, fail, facts, fresh, ifThenElse, list, not, once, oneOf, query, succeed, table, value,
-  type Term,
+  Goal, InstantiationError, Var, clauses, conj, cut, eq, fail, facts, fresh, ifThenElse, list, not, once, oneOf, query,
+  succeed, table, value, type Arg, type Term,
 } from "../src/index.ts";
 import {
   ancestor, append, appendWithoutGen, australia, fromPeano, grandparent, length, member, nat, path, peano, plus, pythagorean,
@@ -118,7 +118,7 @@ test("gen bodies use earlier results to build later terms and return values", ()
       const [a, b, c] = yield* vars(3);
       yield* eq(q, [a!, b!, c!]);
       yield* eq(a!, 1);
-      const x = (yield* value(a!)) as number;
+      const x = yield* value(a!);
       yield* eq(b!, [x, x]);
     }),
   ).toArray();
@@ -132,7 +132,22 @@ test("value reads bindings into JavaScript, so length can compute with them", ()
   // Generate mode: lists of length 2 are found (the search for more never ends).
   const [generated] = take(query((xs) => length(xs, 2)), 1);
   expect(generated).toHaveLength(2);
-  expect(query((t) => value(["f", t])).toArray()).toEqual(["_0"]);
+});
+
+test("typed variables read back as their type, and unbound reads throw like is/2", () => {
+  const answers = query((q) =>
+    Goal.gen(function* () {
+      const n = yield* fresh<number>();
+      yield* eq(n, 20);
+      const doubled: number = (yield* value(n)) * 2;
+      yield* eq(q, doubled);
+    }),
+  ).toArray();
+  expect(answers).toEqual([40]);
+  expect(() => query((t) => value(["f", t])).toArray()).toThrow(InstantiationError);
+  expect(() => query(() => Goal.gen(function* () {
+    yield* value(yield* fresh<number>());
+  })).toArray()).toThrow(InstantiationError);
 });
 
 test("conj and fresh's callback form match the generator version", () => {
@@ -186,15 +201,11 @@ test("answers come back in Prolog's depth-first order", () => {
   ]);
 });
 
-const num = (t: Term) => Goal.gen(function* () {
-  return (yield* value(t)) as number;
-});
-
 // max(X, Y, X) :- X >= Y, !.  max(_, Y, Y).
-const max = (x: Term, y: Term, z: Term) =>
+const max = (x: Arg<number>, y: Arg<number>, z: Arg<number>) =>
   clauses(
     Goal.gen(function* () {
-      yield* ((yield* num(x)) >= (yield* num(y)) ? succeed : fail);
+      yield* ((yield* value(x)) >= (yield* value(y)) ? succeed : fail);
       yield* cut;
       yield* eq(z, x);
     }),
@@ -206,9 +217,9 @@ test("cut commits to a clause and prunes the clauses after it", () => {
     expect(query((z) => max(a, b, z)).toArray()).toEqual([Math.max(a, b)]);
   }), options);
   // Without the cut, the second clause would also answer.
-  const noCut = (x: Term, y: Term, z: Term) =>
+  const noCut = (x: Arg<number>, y: Arg<number>, z: Arg<number>) =>
     clauses(Goal.gen(function* () {
-      yield* ((yield* num(x)) >= (yield* num(y)) ? succeed : fail);
+      yield* ((yield* value(x)) >= (yield* value(y)) ? succeed : fail);
       yield* eq(z, x);
     }), eq(z, y));
   expect(query((z) => noCut(3, 1, z)).toArray()).toEqual([3, 1]);
@@ -281,12 +292,13 @@ test("tabled recursion matches transitive closure on any graph", () => {
 
     const edge = facts(pairs);
     // Left recursion.
-    const left: (x: Term, z: Term) => Goal<void> = table((x: Term, z: Term) =>
+    type Rel = (x: Arg<number>, z: Arg<number>) => Goal<void>;
+    const left: Rel = table((x: Arg<number>, z: Arg<number>) =>
       oneOf(fresh((y) => conj(left(x, y), edge(y, z))), edge(x, z)));
     // Mutual recursion: p and q form one SCC.
-    const p: (x: Term, z: Term) => Goal<void> = table((x: Term, z: Term) =>
+    const p: Rel = table((x: Arg<number>, z: Arg<number>) =>
       oneOf(fresh((y) => conj(q(x, y), edge(y, z))), edge(x, z)));
-    const q: (x: Term, z: Term) => Goal<void> = table((x: Term, z: Term) => p(x, z));
+    const q: Rel = table((x: Arg<number>, z: Arg<number>) => p(x, z));
 
     for (const rel of [left, p, q]) {
       expect(sorted(query((x, z) => rel(x, z)).toArray())).toEqual(expected);
@@ -295,4 +307,20 @@ test("tabled recursion matches transitive closure on any graph", () => {
       }
     }
   }), { ...options, numRuns: 100 });
+});
+
+test("facts type their columns and value returns the variable's type", () => {
+  const born = facts([["Sarah", 1940], ["John", 1965]]);
+  const goal = Goal.gen(function* () {
+    const name = yield* fresh<string>();
+    const year = yield* fresh<number>();
+    yield* born(name, year);
+    // @ts-expect-error a string variable can't fill the number column
+    yield* born(name, name);
+    const y: number = yield* value(year);
+    // @ts-expect-error reading a Var<number> gives a number
+    const wrong: string = yield* value(year);
+    return [y, wrong];
+  });
+  expect(query(() => goal).toArray()).toEqual([]);
 });

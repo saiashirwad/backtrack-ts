@@ -5,10 +5,12 @@ import {
   emptySubst,
   fold,
   instantiate,
+  isGround,
   keyOf,
   rebuild,
   reify,
   unify,
+  type Arg,
   type Subst,
   type Term,
 } from "./terms.ts";
@@ -53,8 +55,11 @@ export class Goal<A> {
   }
 }
 
-/** A new unbound variable, or with a callback, one variable per parameter. */
-export function fresh(): Goal<Var>;
+/**
+ * A new unbound variable, optionally typed: `fresh<number>()`. With a callback,
+ * one untyped variable per parameter.
+ */
+export function fresh<T = any>(): Goal<Var<T>>;
 export function fresh<A>(f: (...vars: Var[]) => Goal<A>): Goal<A>;
 export function fresh<A>(f?: (...vars: Var[]) => Goal<A>): Goal<Var> | Goal<A> {
   return f ? new Goal<A>({ kind: "freshIn", body: f }) : new Goal<Var>({ kind: "fresh" });
@@ -63,8 +68,29 @@ export function fresh<A>(f?: (...vars: Var[]) => Goal<A>): Goal<Var> | Goal<A> {
 /** `A = B`: succeeds once if `a` and `b` unify. */
 export const eq = (a: Term, b: Term): Goal<void> => new Goal({ kind: "eq", a, b });
 
-/** Reads `t` under the current bindings, like the right-hand side of `is`. */
-export const value = (t: Term): Goal<Term> => new Goal({ kind: "value", t });
+/** Thrown when `value` reads a term that still contains unbound variables. */
+export class InstantiationError extends Error {
+  readonly term: unknown;
+
+  constructor(term: unknown) {
+    super("value: the term is not fully instantiated");
+    this.name = "InstantiationError";
+    this.term = term;
+  }
+}
+
+/**
+ * Reads `t` under the current bindings into JavaScript, like the right-hand side of
+ * Prolog's `is`. Like `is`, it throws an InstantiationError if `t` isn't fully bound,
+ * so the result really is a `T`.
+ */
+export const value = <T>(t: Arg<T>): Goal<T> => new Goal({ kind: "value", t: t as Term });
+
+const read = (t: Term, subst: Subst): Term => {
+  const resolved = fold(t, subst, (leaf) => leaf, rebuild);
+  if (!isGround(resolved)) throw new InstantiationError(reify(t, subst));
+  return resolved;
+};
 
 export const succeed: Goal<void> = new Goal({ kind: "succeed" });
 export const fail: Goal<never> = new Goal({ kind: "fail" });
@@ -91,11 +117,17 @@ export const not = (goal: Goal<unknown>): Goal<void> => ifThenElse(goal, fail, s
 /** `once(G)`: the first answer of `goal` only. */
 export const once = (goal: Goal<unknown>): Goal<void> => ifThenElse(goal, succeed, fail);
 
-/** Turn rows of ground terms into a relation usable in any direction. */
+type Widen<T> = T extends string ? string : T extends number ? number : T extends boolean ? boolean : T;
+
+/**
+ * Turn rows of ground terms into a relation usable in any direction. Each argument
+ * is typed by its column: `born(person, year)` needs `year` to be a number or a
+ * `Var<number>`.
+ */
 export const facts =
-  <Row extends readonly Term[]>(rows: readonly Row[]) =>
-  (...args: { [K in keyof Row]: Term }): Goal<void> =>
-    oneOf(...rows.map((row) => eq(args, row)));
+  <const Row extends readonly Term[]>(rows: readonly Row[]) =>
+  (...args: { [K in keyof Row]: Arg<Widen<Row[K]>> }): Goal<void> =>
+    oneOf(...rows.map((row) => eq(args as readonly Term[], row)));
 
 // --- Tabling ------------------------------------------------------------
 
@@ -239,7 +271,7 @@ function* solve(goal: Goal<unknown>, start: State, ctx: Context): Generator<Answ
         v = new Var(s.next);
         s = { ...s, next: s.next + 1 };
       } else if (node.kind === "value") {
-        v = fold(node.t, s.subst, (leaf) => leaf, rebuild);
+        v = read(node.t, s.subst);
       } else if (node.kind === "cut") {
         choices.length = barrier;
       } else if (node.kind === "fail") {
@@ -314,7 +346,7 @@ function* solve(goal: Goal<unknown>, start: State, ctx: Context): Generator<Answ
         s = { ...s, next: s.next + 1 };
         break;
       case "value":
-        ret = fold(node.t, s.subst, (leaf) => leaf, rebuild);
+        ret = read(node.t, s.subst);
         break;
       case "succeed":
         ret = undefined;

@@ -1,4 +1,6 @@
-export class Var {
+/** A logic variable. `T` is the type it will hold once bound; it's checked by TypeScript only. */
+export class Var<T = any> {
+  declare readonly __type?: T;
   readonly id: number;
 
   constructor(id: number) {
@@ -17,6 +19,9 @@ export class Cons {
 }
 
 export type Term = string | number | boolean | null | Var | Cons | readonly Term[];
+
+/** A `T`, or a variable that will hold one. */
+export type Arg<T> = T | Var<T>;
 
 // Persistent map from variable id to term: a 32-way trie keyed by the id's bits.
 // Variable ids are small dense integers, so updates copy only O(log32 n) nodes.
@@ -97,7 +102,7 @@ export const fold = <R>(
 // to the tail of a long list would rescan the whole tail every time.
 const groundCache = new WeakMap<object, boolean>();
 
-const isGround = (root: Term): boolean => {
+export const isGround = (root: Term): boolean => {
   if (root instanceof Var) return false;
   const pending: Term[] = [root];
   const uncached: Term[] = [];

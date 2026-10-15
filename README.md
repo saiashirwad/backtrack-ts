@@ -6,7 +6,7 @@ An implementation of Prolog in TypeScript. You write facts and rules as TypeScri
 - **Not implemented:** Prolog source syntax, `assert`/`retract`, exceptions, and constraints such as `dif`.
 
 ```ts
-import { Goal, eq, facts, fresh, query, value, type Term } from "prolog-ts";
+import { Goal, eq, facts, fresh, query, value, type Arg } from "prolog-ts";
 
 const parent = facts([
   ["Sarah", "John"],
@@ -23,17 +23,17 @@ const born = facts([
   ["Mia", 2020],
 ]);
 
-const birthYear = (person: Term) =>
+const birthYear = (person: Arg<string>) =>
   Goal.gen(function* () {
-    const year = yield* fresh();
+    const year = yield* fresh<number>();
     yield* born(person, year);
-    return (yield* value(year)) as number;
+    return yield* value(year);
   });
 
 // G is X's grandparent, born Gap years earlier.
-const grandparent = (g: Term, x: Term, gap: Term) =>
+const grandparent = (g: Arg<string>, x: Arg<string>, gap: Arg<number>) =>
   Goal.gen(function* () {
-    const p = yield* fresh();
+    const p = yield* fresh<string>();
     yield* parent(g, p);
     yield* parent(p, x);
     const years = (yield* birthYear(x)) - (yield* birthYear(g));
