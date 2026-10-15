@@ -1,6 +1,9 @@
 # prolog-ts
 
-Prolog-style logic programming in TypeScript, written with generators. Relations run in any direction, and each `yield*` hands its result back to JavaScript: `fresh()` gives a variable to reuse in later goals, and `value()` reads a binding so ordinary code can compute with it.
+An implementation of Prolog in TypeScript. You write facts and rules as TypeScript functions, then query them with any mix of known and unknown arguments.
+
+- **Implemented:** unification (with the occurs check), facts, rules, conjunction and disjunction, lists, arithmetic on bound values (like `is`), and tabling (`:- table`).
+- **Not implemented:** Prolog source syntax, cut, negation, `assert`/`retract`, and constraints such as `dif`. Answers may come back in a different order than in standard Prolog.
 
 ```ts
 import { Goal, eq, facts, fresh, query, value, type Term } from "prolog-ts";
@@ -44,7 +47,7 @@ query((g) => grandparent(g, "Anne", 52)).toArray();
 // ["Arnold"]
 ```
 
-Underneath is `Backtrack`, a lazy backtracking search you can use directly:
+The backtracking search it runs on is also exported:
 
 ```ts
 import { Backtrack } from "prolog-ts";
