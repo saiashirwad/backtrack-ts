@@ -1,7 +1,9 @@
 import { expect, test } from "bun:test";
 import fc from "fast-check";
 import { Goal, Var, conj, eq, fresh, list, oneOf, query, value } from "./unify";
-import { append, appendWithoutGen, grandparent, length, nat, path } from "./relations";
+import {
+  ancestor, append, appendWithoutGen, australia, fromPeano, grandparent, length, member, nat, path, peano, plus, pythagorean,
+} from "./relations";
 
 const options = {
   numRuns: 200,
@@ -148,4 +150,37 @@ test("conj and fresh's callback form match the generator version", () => {
   expect(query((q) => conj(eq(q, 1), eq(q, 2))).toArray()).toEqual([]);
   const xs = Array.from({ length: 50_000 }, (_, i) => i);
   expect(query((q) => appendWithoutGen(list(...xs), list("end"), q)).toArray()[0]).toHaveLength(50_001);
+});
+
+test("member checks and enumerates list elements", () => {
+  fc.assert(fc.property(fc.array(fc.integer({ min: 0, max: 5 }), { maxLength: 6 }), fc.integer({ min: 0, max: 5 }), (xs, x) => {
+    expect(query((q) => member(q, list(...xs))).toArray()).toEqual(xs);
+    expect(query(() => member(x, list(...xs))).toArray().length).toBe(xs.filter((y) => y === x).length);
+  }), options);
+});
+
+test("tabled ancestor finds every ancestor in either direction", () => {
+  expect(sorted(query((a) => ancestor(a, "Anne")).toArray())).toEqual(sorted(["John", "Sarah", "Arnold"]));
+  expect(sorted(query((d) => ancestor("Sarah", d)).toArray())).toEqual(sorted(["John", "Anne"]));
+});
+
+test("peano plus adds, subtracts, and splits", () => {
+  fc.assert(fc.property(fc.nat(8), fc.nat(8), (m, n) => {
+    expect(query((k) => plus(peano(m), peano(n), k)).toArray().map(fromPeano)).toEqual([m + n]);
+    expect(query((k) => plus(peano(m), k, peano(m + n))).toArray().map(fromPeano)).toEqual([n]);
+    const splits = query((a, b) => plus(a, b, peano(m))).toArray().map(([a, b]) => [fromPeano(a), fromPeano(b)]);
+    expect(sorted(splits)).toEqual(sorted(Array.from({ length: m + 1 }, (_, i) => [i, m - i])));
+  }), options);
+});
+
+test("pythagorean triples are computed with value", () => {
+  const triples = query((a, b, c) => pythagorean(20, a, b, c)).toArray();
+  expect(sorted(triples)).toEqual(sorted([[3, 4, 5], [5, 12, 13], [6, 8, 10], [8, 15, 17], [9, 12, 15], [12, 16, 20]]));
+});
+
+test("map coloring finds exactly the valid colorings", () => {
+  const solutions = query((wa, nt, sa, q, nsw, v) => australia(wa, nt, sa, q, nsw, v)).toArray();
+  const borders = [[0, 1], [0, 2], [1, 2], [1, 3], [2, 3], [2, 4], [2, 5], [3, 4], [4, 5]];
+  expect(solutions).toHaveLength(6);
+  for (const s of solutions) expect(borders.every(([x, y]) => s[x!] !== s[y!])).toBe(true);
 });

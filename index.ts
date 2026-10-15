@@ -1,6 +1,9 @@
 import { grandparent } from "./grandparent";
 import { queens } from "./nqueens";
-import { append, grandparent as grandparentRelation, path } from "./relations";
+import {
+  ancestor, append, australia, fromPeano, grandparent as grandparentRelation, length, member, path, peano, plus,
+  pythagorean,
+} from "./relations";
 import { list, query } from "./unify";
 
 console.log(grandparent("Anne").toArray());
@@ -13,5 +16,11 @@ console.log(solutions.toArray().length);
 
 console.log(query((q) => grandparentRelation(q, "Anne")).toArray());
 console.log(query((q) => grandparentRelation("Sarah", q)).toArray());
+console.log(query((a) => ancestor(a, "Anne")).toArray());
 console.log(query((x, y) => append(x, y, list(1, 2, 3))).toArray());
+console.log(query((q) => member(q, list("a", "b"))).toArray());
+console.log(query((n) => length(list("a", "b", "c"), n)).toArray());
+console.log(query((a, b) => plus(a, b, peano(2))).toArray().map(([a, b]) => [fromPeano(a), fromPeano(b)]));
+console.log(query((a, b, c) => pythagorean(15, a, b, c)).toArray());
 console.log(query((z) => path("a", z)).toArray());
+console.log(query((wa, nt, sa, q, nsw, v) => australia(wa, nt, sa, q, nsw, v)).toArray().length);

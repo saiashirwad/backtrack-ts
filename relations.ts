@@ -1,4 +1,4 @@
-import { Cons, Goal, conj, eq, facts, fresh, oneOf, table, value, type Term } from "./unify";
+import { Cons, Goal, conj, eq, facts, fail, fresh, oneOf, table, value, type Term } from "./unify";
 
 export const parent = facts([
   ["Sarah", "John"],
@@ -82,3 +82,69 @@ export const path: (x: Term, z: Term) => Goal<void> = table((x: Term, z: Term) =
     edge(x, z),
   ),
 );
+
+// member(X, [X|_]).  member(X, [_|T]) :- member(X, T).
+export const member = (x: Term, xs: Term): Goal<void> =>
+  fresh((h, t) => conj(eq(xs, new Cons(h, t)), oneOf(eq(x, h), member(x, t))));
+
+// ancestor(A, D) :- ancestor(A, P), parent(P, D).  ancestor(A, D) :- parent(A, D).
+export const ancestor: (a: Term, d: Term) => Goal<void> = table((a: Term, d: Term) =>
+  oneOf(
+    fresh((p) => conj(ancestor(a, p), parent(p, d))),
+    parent(a, d),
+  ),
+);
+
+// Peano numbers: 0, ["s", 0], ["s", ["s", 0]], ...
+export const peano = (n: number): Term => {
+  let t: Term = 0;
+  for (let i = 0; i < n; i++) t = ["s", t];
+  return t;
+};
+
+export const fromPeano = (t: unknown): number => {
+  let n = 0;
+  for (; Array.isArray(t); n++) t = t[1];
+  return n;
+};
+
+// plus(0, N, N).  plus(s(M), N, s(K)) :- plus(M, N, K).
+// Pure relation, so it also subtracts and splits: plus(A, B, 3) finds every pair.
+export const plus = (m: Term, n: Term, k: Term): Goal<void> =>
+  oneOf(
+    conj(eq(m, 0), eq(n, k)),
+    fresh((m1, k1) => conj(eq(m, ["s", m1]), eq(k, ["s", k1]), plus(m1, n, k1))),
+  );
+
+// between(L, H, X): X is an integer with L =< X =< H.
+export const between = (lo: number, hi: number, x: Term): Goal<void> =>
+  oneOf(...Array.from({ length: Math.max(hi - lo + 1, 0) }, (_, i) => eq(x, lo + i)));
+
+// Pythagorean triples a =< b with c =< max. `value` brings the bindings into
+// JavaScript so ordinary arithmetic and control flow can drive the search.
+export const pythagorean = (max: number, a: Term, b: Term, c: Term): Goal<void> =>
+  Goal.gen(function* () {
+    yield* between(1, max, a);
+    const av = (yield* value(a)) as number;
+    yield* between(av, max, b);
+    const bv = (yield* value(b)) as number;
+    const cv = Math.hypot(av, bv);
+    yield* Number.isInteger(cv) && cv <= max ? eq(c, cv) : fail;
+  });
+
+// Color the mainland Australian states so that neighbours differ.
+export const colors = ["red", "green", "blue"];
+const different = facts(colors.flatMap((x) => colors.filter((y) => y !== x).map((y) => [x, y])));
+
+export const australia = (wa: Term, nt: Term, sa: Term, q: Term, nsw: Term, v: Term): Goal<void> =>
+  conj(
+    different(wa, nt),
+    different(wa, sa),
+    different(nt, sa),
+    different(nt, q),
+    different(sa, q),
+    different(sa, nsw),
+    different(sa, v),
+    different(q, nsw),
+    different(nsw, v),
+  );

@@ -275,6 +275,9 @@ export function fresh<A>(f?: (...vars: Var[]) => Goal<A>): Goal<Var> | Goal<A> {
   );
 }
 
+/** A goal with no answers. */
+export const fail: Goal<never> = new Goal(() => {}, true);
+
 /** Succeeds once if `a` and `b` unify, extending the bindings; fails otherwise. */
 export const eq = (a: Term, b: Term): Goal<void> =>
   new Goal((s, k) => {
