@@ -4,7 +4,7 @@ import {
   ancestor, append, australia, fromPeano, grandparent as grandparentRelation, length, member, path, peano, plus,
   pythagorean,
 } from "./relations.ts";
-import { list, query } from "../src/unify.ts";
+import { list, query } from "../src/index.ts";
 
 console.log(grandparent("Anne").toArray());
 
