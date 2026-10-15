@@ -47,6 +47,37 @@ query((g) => grandparent(g, "Anne", 52)).toArray();
 // ["Arnold"]
 ```
 
+The same program in Prolog:
+
+```prolog
+parent(sarah, john).
+parent(arnold, john).
+parent(john, anne).
+parent(anne, mia).
+
+born(sarah, 1940).
+born(arnold, 1938).
+born(john, 1965).
+born(anne, 1990).
+born(mia, 2020).
+
+% G is X's grandparent, born Gap years earlier.
+grandparent(G, X, Gap) :-
+    parent(G, P),
+    parent(P, X),
+    born(X, XYear),
+    born(G, GYear),
+    Gap is XYear - GYear.
+
+?- grandparent(G, X, Gap).
+%  G = sarah, X = anne, Gap = 50 ;
+%  G = arnold, X = anne, Gap = 52 ;
+%  G = john, X = mia, Gap = 55.
+
+?- grandparent(G, anne, 52).
+%  G = arnold.
+```
+
 The backtracking search it runs on is also exported:
 
 ```ts
