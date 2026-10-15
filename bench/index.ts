@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { bench, group, run, summary } from "mitata";
-import { Backtrack } from "./lazy";
-import { Backtrack as EagerBacktrack } from "./eager";
-import { grandparent } from "./grandparent";
-import { queens } from "./nqueens";
-import type { Logic, Search } from "./search";
+import { Backtrack } from "../src/lazy";
+import { Backtrack as EagerBacktrack } from "../src/eager";
+import { grandparent } from "../examples/grandparent";
+import { queens } from "../examples/nqueens";
+import type { Logic, Search } from "../src/search";
 
 const values = Array.from({ length: 32 }, (_, i) => i);
 

@@ -1,10 +1,12 @@
 {
   "name": "backtrack-ts",
-  "module": "index.ts",
+  "module": "examples/index.ts",
   "type": "module",
   "private": true,
   "scripts": {
-    "bench": "bun run bench.ts",
+    "test": "bun test",
+    "examples": "bun run examples/index.ts",
+    "bench": "bun run bench/index.ts",
     "mutate": "node node_modules/@stryker-mutator/core/bin/stryker.js run"
   },
   "devDependencies": {

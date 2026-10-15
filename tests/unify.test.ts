@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
 import fc from "fast-check";
-import { Goal, Var, conj, eq, fresh, list, oneOf, query, value } from "./unify";
+import { Goal, Var, conj, eq, fresh, list, oneOf, query, value } from "../src/unify";
 import {
   ancestor, append, appendWithoutGen, australia, fromPeano, grandparent, length, member, nat, path, peano, plus, pythagorean,
-} from "./relations";
+} from "../examples/relations";
 
 const options = {
   numRuns: 200,

@@ -7,7 +7,7 @@ Backtracking search with generators, plus a Prolog-style logic layer with unific
 `Backtrack` is a lazy search monad: `fromArray` is a choice point and `guard` prunes a branch.
 
 ```ts
-import { Backtrack } from "./lazy";
+import { Backtrack } from "./src/lazy";
 
 const parents = [
   ["Sarah", "John"],
@@ -28,7 +28,7 @@ console.log(grandparent("Anne").toArray()); // ["Sarah", "Arnold"]
 ```
 
 ```ts
-import { Backtrack } from "./lazy";
+import { Backtrack } from "./src/lazy";
 
 const queens = (n: number) => {
   const cols = Array.from({ length: n }, (_, i) => i + 1);
@@ -56,7 +56,7 @@ console.log(solutions.toArray().length); // 92
 
 ## Unification
 
-`unify.ts` adds logic variables and unification, so a relation is written once and queried in any direction. `query` returns a lazy `Backtrack` of answers, with unbound variables shown as `_n`.
+`src/unify.ts` adds logic variables and unification, so a relation is written once and queried in any direction. `query` returns a lazy `Backtrack` of answers, with unbound variables shown as `_n`.
 
 | Function | Prolog |
 |---|---|
@@ -75,7 +75,7 @@ Terms are strings, numbers, booleans, `null`, variables, fixed-length tuples (ar
 ### Facts and rules
 
 ```ts
-import { Goal, facts, fresh, query, type Term } from "./unify";
+import { Goal, facts, fresh, query, type Term } from "./src/unify";
 
 const parent = facts([
   ["Sarah", "John"],
@@ -100,7 +100,7 @@ console.log(query((g, x) => grandparent(g, x)).toArray()); // [["Sarah", "Anne"]
 Relations written with `conj` and the callback form of `fresh` skip generators entirely, which avoids replay cost when a relation has many answers.
 
 ```ts
-import { Cons, conj, eq, fresh, list, oneOf, query, type Goal, type Term } from "./unify";
+import { Cons, conj, eq, fresh, list, oneOf, query, type Goal, type Term } from "./src/unify";
 
 // append([], Ys, Ys).  append([H|T], Ys, [H|R]) :- append(T, Ys, R).
 const append = (xs: Term, ys: Term, zs: Term): Goal<void> =>
@@ -124,7 +124,7 @@ console.log(query((q) => member(q, list("a", "b"))).toArray()); // ["a", "b"]
 A pure relation has no inputs or outputs: the same `plus` adds, subtracts, and enumerates splits.
 
 ```ts
-import { conj, eq, fresh, oneOf, query, type Goal, type Term } from "./unify";
+import { conj, eq, fresh, oneOf, query, type Goal, type Term } from "./src/unify";
 
 const peano = (n: number): Term => (n === 0 ? 0 : ["s", peano(n - 1)]);
 const fromPeano = (t: unknown): number => (Array.isArray(t) ? 1 + fromPeano(t[1]) : 0);
@@ -146,7 +146,7 @@ console.log(query((a, b) => plus(a, b, peano(2))).toArray().map(([a, b]) => [fro
 Inside `Goal.gen`, each `yield*` hands a value back to JavaScript. `value(t)` reads a variable's current binding, so later steps can use ordinary arithmetic and control flow. Like Prolog's `is`, the variable must already be bound when `value` runs.
 
 ```ts
-import { Cons, Goal, conj, eq, fail, fresh, oneOf, query, value, list, type Term } from "./unify";
+import { Cons, Goal, conj, eq, fail, fresh, oneOf, query, value, list, type Term } from "./src/unify";
 
 // length([], 0).  length([_|T], N) :- length(T, M), N is M + 1.
 const length = (xs: Term, n: Term): Goal<void> =>
@@ -184,7 +184,7 @@ console.log(query((a, b, c) => pythagorean(15, a, b, c)).toArray()); // [[3, 4, 
 Left recursion loops forever in plain Prolog. `table` remembers each call's answers by argument pattern, so recursive calls reuse them and the search stops once nothing new turns up, even over a cyclic graph.
 
 ```ts
-import { conj, facts, fresh, oneOf, query, table, type Goal, type Term } from "./unify";
+import { conj, facts, fresh, oneOf, query, table, type Goal, type Term } from "./src/unify";
 
 const edge = facts([
   ["a", "b"],
@@ -208,7 +208,7 @@ console.log(query((z) => path("a", z)).toArray()); // ["b", "a", "c"]
 Map coloring: give each mainland Australian state a color so that no two neighbors share one.
 
 ```ts
-import { conj, facts, query, type Goal, type Term } from "./unify";
+import { conj, facts, query, type Goal, type Term } from "./src/unify";
 
 const colors = ["red", "green", "blue"];
 const different = facts(colors.flatMap((x) => colors.filter((y) => y !== x).map((y) => [x, y])));
@@ -224,13 +224,20 @@ console.log(solutions.iterate().next().value); // e.g. ["red", "green", "blue", 
 console.log(solutions.toArray().length); // 6
 ```
 
-The examples above also live in `relations.ts`, are exercised by `unify.test.ts`, and print from `bun run index.ts`.
+The examples above also live in `examples/relations.ts`, are exercised by `tests/unify.test.ts`, and print from `bun run examples`.
 
 ## Development
 
+```
+src/        the library: lazy.ts and eager.ts (Backtrack), search.ts (shared interfaces), unify.ts (logic layer)
+examples/   grandparent, n-queens, and the Prolog-style relations; index.ts prints them all
+tests/      property tests for both layers
+bench/      mitata benchmarks comparing the lazy and eager implementations
+```
+
 ```sh
 bun test           # property tests
-bun run index.ts   # print the examples
+bun run examples   # print the examples
 bun run bench      # benchmarks
 bun run mutate     # mutation testing
 ```

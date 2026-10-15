@@ -1,10 +1,10 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
-  "mutate": ["lazy.ts", "eager.ts"],
+  "mutate": ["src/lazy.ts", "src/eager.ts"],
   "ignorePatterns": ["tsconfig.json"],
   "testRunner": "command",
   "commandRunner": {
-    "command": "FC_SEED=20261014 bun test backtrack.test.ts"
+    "command": "FC_SEED=20261014 bun test tests/backtrack.test.ts"
   },
   "coverageAnalysis": "off",
   "concurrency": 2,

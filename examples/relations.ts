@@ -1,4 +1,4 @@
-import { Cons, Goal, conj, eq, facts, fail, fresh, oneOf, table, value, type Term } from "./unify";
+import { Cons, Goal, conj, eq, facts, fail, fresh, oneOf, table, value, type Term } from "../src/unify";
 
 export const parent = facts([
   ["Sarah", "John"],
