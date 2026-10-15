@@ -45,3 +45,63 @@ console.log(results.next().value); // First solution
 results.return(undefined);
 console.log(solutions.toArray().length); // 92
 ```
+
+```ts
+import { Goal, facts, fresh, oneOf, query, table, type Term } from "./unify";
+
+const parent = facts([
+  ["Sarah", "John"],
+  ["Arnold", "John"],
+  ["John", "Anne"],
+]);
+
+const grandparent = (g: Term, x: Term) =>
+  Goal.gen(function* () {
+    const p = yield* fresh();
+    yield* parent(g, p);
+    yield* parent(p, x);
+  });
+
+console.log(query((q) => grandparent(q, "Anne")).toArray()); // ["Sarah", "Arnold"]
+console.log(query((q) => grandparent("Sarah", q)).toArray()); // ["Anne"]
+
+// Tabling lets left recursion over a cyclic graph terminate.
+const edge = facts([["a", "b"], ["b", "a"], ["b", "c"]]);
+const path: (x: Term, z: Term) => Goal<void> = table((x, z) =>
+  oneOf(
+    Goal.gen(function* () {
+      const y = yield* fresh();
+      yield* path(x, y);
+      yield* edge(y, z);
+    }),
+    edge(x, z),
+  ),
+);
+
+console.log(query((z) => path("a", z)).toArray()); // ["b", "a", "c"]
+```
+
+```ts
+import { Cons, Goal, conj, eq, fresh, oneOf, query, value, type Term } from "./unify";
+
+// gen bodies can compute with bindings: `value` plays the role of Prolog's `is`.
+const length = (xs: Term, n: Term): Goal<void> =>
+  oneOf(
+    conj(eq(xs, []), eq(n, 0)),
+    Goal.gen(function* () {
+      const t = yield* fresh();
+      const m = yield* fresh();
+      yield* eq(xs, new Cons(yield* fresh(), t));
+      yield* length(t, m);
+      const count = (yield* value(m)) as number;
+      yield* eq(n, count + 1);
+    }),
+  );
+
+// Pure relations can skip generators (and their replay cost) with conj and fresh's callback form.
+const append = (xs: Term, ys: Term, zs: Term): Goal<void> =>
+  oneOf(
+    conj(eq(xs, []), eq(ys, zs)),
+    fresh((h, t, r) => conj(eq(xs, new Cons(h, t)), eq(zs, new Cons(h, r)), append(t, ys, r))),
+  );
+```
